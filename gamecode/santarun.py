@@ -3,27 +3,6 @@ from pygame.locals import *
 from pygame import mixer
 import random
 
-#배경 음악 추가
-mixer.init()
-mixer.music.load("jingle-bells-violin-loop-8645.mp3")
-mixer.music.set_volume(0.1)
-mixer.music.play()
-
-#사운드 추가
-break_sound = mixer.Sound("422669__lynx-5969__ice-break-with-hand.wav")
-break_sound.set_volume(0.3)
-
-clear_sound = mixer.Sound("270402__littlerobotsoundfactory__jingle-win-00.wav")
-clear_sound.set_volume(0.5)
-
-fail_sound = mixer.Sound("454786__carloscarty__silent-night-intro-pan-flute-glissando.wav")
-fail_sound.set_volume(0.4)
-
-shoot_sound = mixer.Sound("174464__yottasounds__ending-effect-001.wav")
-shoot_sound.set_volume(0.3)
-
-item_pickup = mixer.Sound("544015__mr-fritz__item-pick-up.wav")
-item_pickup.set_volume(0.5)
 
 class MovingObject(pygame.sprite.Sprite):
     def __init__(self, x, y, angle=0.0, vx=0.0, vy=0.0, av=0.0, ds=0.0):
@@ -169,49 +148,101 @@ class Player(MovingObject):
          self.vy = -15         
 
 pygame.init()
-pygame.display.set_caption("Santa Run")
 screen = pygame.display.set_mode((1024,768)) #윈도우 크기
-
 clock = pygame.time.Clock() #FPS 조절에 사용
-
-
-santa = Player()
-
-
-moving_sprites = pygame.sprite.Group()
-moving_sprites.add(santa)
-bullets = pygame.sprite.Group()
-obstacles = pygame.sprite.Group()
-item = pygame.sprite.Group()
-
-#배경이미지
+ #배경이미지
 background = pygame.image.load("wintertileset/png/BG/BG.png").convert()
-bgx = 0
 
 #바닥 타일
 tile2 = pygame.image.load("wintertileset/png/Tiles/2.png").convert_alpha()
 tile2 = pygame.transform.scale(tile2, (64, 64)) # 적당한 크기로 조정
 tile5 = pygame.image.load("wintertileset/png/Tiles/5.png").convert_alpha()
 tile5 = pygame.transform.scale(tile5, (64, 64))
-gx = 0
-
-#스코어
+#폰트
 scorefont = pygame.font.SysFont("system",40)
 titlefont = pygame.font.SysFont("system",200)
+#배경 음악 추가
+mixer.init()
+mixer.music.load("jingle-bells-violin-loop-8645.mp3")
+mixer.music.set_volume(0.1)
 
-running = True
-draw_rect = False
-score = 0
-while running:
-     
+#사운드 추가
+break_sound = mixer.Sound("422669__lynx-5969__ice-break-with-hand.wav")
+break_sound.set_volume(0.3)
+
+clear_sound = mixer.Sound("270402__littlerobotsoundfactory__jingle-win-00.wav")
+clear_sound.set_volume(0.5)
+
+game_over = mixer.Sound("382310__myfox14__game-over-arcade.wav")
+game_over.set_volume(0.4)
+
+title_sound = mixer.Sound("454786__carloscarty__silent-night-intro-pan-flute-glissando.wav")
+title_sound.set_volume(0.1)
+
+
+shoot_sound = mixer.Sound("174464__yottasounds__ending-effect-001.wav")
+shoot_sound.set_volume(0.3)
+
+item_pickup = mixer.Sound("544015__mr-fritz__item-pick-up.wav")
+item_pickup.set_volume(0.5)
+
+quit = False
+while True:
+    running = True
+    draw_rect = False
+    score = 0
+    bgx = 0
+    gx = 0
+    pygame.event.clear()
+    santa = Player()
+   
+    #시작화면
+    title_text = titlefont.render("Santa Run!", 1, (255, 255, 255))
+    comment_text = scorefont.render("Press any key to play", 1, (255, 255, 255))
+    show_title = True
+    frame_count = 0
+
+    while show_title:
         for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                        running = False
-                elif event.type == KEYUP:
-                    if event.key == K_LCTRL:
-                        bullets.add(Bullet(santa.x - 20, santa.y)) #총알
-                    elif event.key == K_SPACE:
-                        santa.Jump()
+            if event.type == KEYUP:
+                show_title = False
+        title_sound.play()
+        screen.blit(background, (bgx, 0)) 
+        for i in range(-1,17):
+                screen.blit(tile2,(-gx + i*64,64* 9))
+                screen.blit(tile5,(-gx + i*64,64* 10)) 
+                screen.blit(tile5,(-gx + i*64,64* 11)) 
+        screen_width, screen_height = screen.get_size()
+        screen.blit(
+            title_text, title_text.get_rect(center = (screen_width /2 ,screen_height / 2 )),
+        )
+        if frame_count // 15 % 2 == 0:
+            screen.blit(
+                comment_text, comment_text.get_rect(
+                    center = (screen_width /2 ,screen_height / 2 + 100)
+                    ),    
+                )
+        pygame.display.flip()
+        clock.tick(30)
+        frame_count += 1
+    title_sound.stop()
+    #게임
+    moving_sprites = pygame.sprite.Group()
+    moving_sprites.add(santa)
+    bullets = pygame.sprite.Group()
+    obstacles = pygame.sprite.Group()
+    item = pygame.sprite.Group()
+    mixer.music.play()
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                    quit = True
+                    running = False
+            elif event.type == KEYUP:
+                if event.key == K_LCTRL:
+                    bullets.add(Bullet(santa.x - 20, santa.y)) #총알
+                elif event.key == K_SPACE:
+                    santa.Jump()
         """업데이트"""        
         bgx -= 0.01
         bgx %= background.get_width()
@@ -224,7 +255,7 @@ while running:
         bullets.update()
         obstacles.update()
         item.update()
-        
+            
 
         for b in bullets.copy(): # copy 주의
             if b.rect.left > 1024:
@@ -242,41 +273,40 @@ while running:
         if random.random() > 0.97: #아이템 생성
             new_item = Item(1024, random.randrange(150,450))
             item.add(new_item)
-              
+                
         if random.random() > 0.97:  # 프레임당 2%의 확률로 장애물 생성
             obstacles.add(Obstacle(1000, 530, vx=-6))
             #obstacles.add(Obstacle(1000, random.randrange(100,530), vx=-6))
-            
+                
         #아이템 충돌
         for i in item.copy():
             if santa.rect.colliderect(i.rect):
-                 score += 1
-                 item.remove(i)
-                 item_pickup.play() 
+                score += 1
+                item.remove(i)
+                item_pickup.play() 
             elif i.rect.right < 0:
-                 item.remove(i) 
-
+                item.remove(i) 
         #클리어 조건
         if score >= 100:
-             mixer.music.stop()
-             clear_sound.play()
-             clear_text = titlefont.render("Cleared!", True, (255,255,255))
-             screen.blit(clear_text, (220,220))
-             pygame.display.flip()
-             pygame.time.wait(int(clear_sound.get_length() * 1000))
-             running = False
+            mixer.music.stop()
+            clear_sound.play()
+            clear_text = titlefont.render("Cleared!", 1, (255,255,255))
+            screen.blit(clear_text, (220,220))
+            pygame.display.flip()
+            pygame.time.wait(int(clear_sound.get_length() * 1000))
+            running = False
         else: # 장애물 충돌
-             for o in obstacles.copy():
-                  if santa.rect.colliderect(o.rect):
-                       mixer.music.stop()
-                       fail_sound.play()
-                       fail_text = titlefont.render("Game over", True, (255,0 ,0))
-                       screen.blit(fail_text, (150, 300))
-                       pygame.display.flip()
-                       pygame.time.wait(int(fail_sound.get_length() * 1000))
-                       running = False
-                       break  
-        
+            for o in obstacles.copy():
+                if santa.rect.colliderect(o.rect):
+                    mixer.music.stop()
+                    game_over.play()
+                    fail_text = titlefont.render("Game over", 1, (255,0 ,0))
+                    screen.blit(fail_text, (150, 300))
+                    pygame.display.flip()
+                    pygame.time.wait(int(game_over.get_length() * 1000))
+                    running = False
+                    break  
+            
         """그리기 시작"""
         screen.fill((255,255,255))
         screen.blit(background, dest= (-bgx, 0))
@@ -295,10 +325,12 @@ while running:
             santa.draw_rect(screen)
             for i in item:
                 item.draw(screen)
-        scoretext = scorefont.render("Score:" + str(score), True,(255,255,255))
+        scoretext = scorefont.render("Score:" + str(score), 1,(255,255,255))
         screen.blit(scoretext, (850, 50))
+
+        
         pygame.display.flip()
-
-        clock.tick(30)
-
+        clock.tick(30)      
+    if quit:
+        break
 pygame.quit() 
