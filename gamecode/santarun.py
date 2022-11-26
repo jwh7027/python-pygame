@@ -257,7 +257,7 @@ while running:
                  item.remove(i) 
 
         #클리어 조건
-        if score >= 10:
+        if score >= 100:
              mixer.music.stop()
              clear_sound.play()
              clear_text = titlefont.render("Cleared!", True, (255,255,255))
