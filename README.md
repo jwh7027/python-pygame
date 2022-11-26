@@ -1,7 +1,7 @@
 # python-pygame
 
 # Introduction
-pygame 라이브러리를 사용하여 게임제작 했습니다
+pygame 모듈을 사용해 쉽고 간단한 게임을 제작했습니다
 
 # Development
 SantaRun
