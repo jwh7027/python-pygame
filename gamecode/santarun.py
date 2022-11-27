@@ -2,7 +2,7 @@ import pygame
 from pygame.locals import *
 from pygame import mixer
 import random
-
+GAMESPEED = 10.0
 
 class MovingObject(pygame.sprite.Sprite):
     def __init__(self, x, y, angle=0.0, vx=0.0, vy=0.0, av=0.0, ds=0.0):
@@ -41,58 +41,30 @@ class MovingObject(pygame.sprite.Sprite):
         pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
 
 
-class Bullet(pygame.sprite.Sprite):
-    img_src = None
-
+class Bullet(MovingObject):
+    source_sprites = []
     def __init__(self, x, y):
-        super().__init__()
-        if Bullet.img_src == None:
-            Bullet.img_src = pygame.image.load("present/present-gift-box-reward-full.png").convert_alpha()
-            w, h = Bullet.img_src.get_size()
-            Bullet.img_src = pygame.transform.scale(Bullet.img_src, (w // 10, h // 10))
-        self.image = Bullet.img_src # 첫 프레임은 회전이 없음
-        self.vx = 20.0 # 총알 속도
-        self.vy = 0.0
-        self.x = x
-        self.y = y
-        self.angle = 0.0
-        self.rect = self.image.get_rect()
-        self.rect.center = (self.x, self.y)
-
-    def update(self):
-        self.x += self.vx # dt 곱하기를 생략 (작은 속도값 사용)
-        self.y += self.vy
-        self.rect.center = (self.x, self.y)
-        self.angle -= 20.0
-        self.image = pygame.transform.rotate(Bullet.img_src, self.angle)
-        self.rect = self.image.get_rect(center=self.rect.center)
-
-class Obstacle(pygame.sprite.Sprite): # class Bullet과 비슷합니다.
-    img_src = None
-
-    def __init__(self, x, y, vx=0.0, vy=0.0, av=0.0, scale=1):
-        super().__init__()
-        if Obstacle.img_src == None:
-            Obstacle.img_src = pygame.image.load("wintertileset/png/Object/IceBox.png").convert_alpha()
-            w, h = Obstacle.img_src.get_size()
-            Obstacle.img_src = pygame.transform.scale(Obstacle.img_src, (w // scale, h // scale))
-        self.image = Obstacle.img_src # 첫 프레임은 회전이 없음
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
-        self.av = av # 각 속도 (angular velocity)
-        self.angle = 0.0
-        self.rect = self.image.get_rect()
-        self.rect.center = (self.x, self.y)
-
-    def update(self):
-        self.x += self.vx # dt 곱하기 생략
-        self.y += self.vy
-        self.rect.center = (self.x, self.y)
-        self.angle -= self.av
-        self.image = pygame.transform.rotate(Obstacle.img_src, self.angle)
-        self.rect = self.image.get_rect(center=self.rect.center)
+        super().__init__(x,y, vx =20.0, av =-20.0)
+    def init_sprites(self):
+        if not Bullet.source_sprites:
+            img = pygame.image.load("present/present-gift-box-reward-full.png").convert_alpha()
+            w, h = img.get_size()
+            img = pygame.transform.scale(img, (w // 10 , h // 10))
+            Bullet.source_sprites.append(img)
+        return Bullet.source_sprites    
+        
+class Obstacle(MovingObject):
+    source_sprites = []
+    def __init__(self, x, y):
+        super().__init__(x,y, vx =-GAMESPEED)
+    def init_sprites(self):
+        if not Obstacle.source_sprites:
+            Obstacle.source_sprites = [
+                pygame.image.load(
+                    "wintertileset/png/Object/IceBox.png"
+                ).convert_alpha()
+            ]
+        return Obstacle.source_sprites    
         
 class Item(MovingObject):
     source_sprites = []
@@ -114,7 +86,7 @@ class Item(MovingObject):
         "yaycandies/size1/wrappedtrans_yellow.png",
     ]
     def __init__(self, x, y):
-        super().__init__(x,y, vx= -10)
+        super().__init__(x,y, vx= -GAMESPEED)
     def init_sprites(self):
         if not Item.source_sprites:
             for f in Item.IMAGE_FILENAMES:
@@ -145,7 +117,28 @@ class Player(MovingObject):
              self.y = 520
              self.vy = 0.0
     def Jump(self):
-         self.vy = -15         
+         self.vy = -15
+
+
+class Tile(): #바닥 타일
+    sprites = []
+    def __init__(self):
+        super().__init__()
+        for i in range(1,16):
+            tile = pygame.image.load(f"wintertileset/png/Tiles/{i}.png").convert_alpha()
+            w, h = tile.get_size()
+            tile = pygame.transform.scale(tile, (w // 2 , h // 2))
+            Tile.sprites.append(tile)
+            self.x = 0
+
+    def draw(self, screen):
+        for i in range(-1,16):
+            screen.blit(self.sprites[1], (self.x + i * 64, 64 * 9))
+            screen.blit(self.sprites[4], (self.x + i * 64, 64 * 10))
+            screen.blit(self.sprites[4], (self.x + i * 64, 64 * 11))
+    def update(self):
+        self.x -= GAMESPEED
+        self.x %= 64                                  
 
 pygame.init()
 screen = pygame.display.set_mode((1024,768)) #윈도우 크기
@@ -153,11 +146,6 @@ clock = pygame.time.Clock() #FPS 조절에 사용
  #배경이미지
 background = pygame.image.load("wintertileset/png/BG/BG.png").convert()
 
-#바닥 타일
-tile2 = pygame.image.load("wintertileset/png/Tiles/2.png").convert_alpha()
-tile2 = pygame.transform.scale(tile2, (64, 64)) # 적당한 크기로 조정
-tile5 = pygame.image.load("wintertileset/png/Tiles/5.png").convert_alpha()
-tile5 = pygame.transform.scale(tile5, (64, 64))
 #폰트
 scorefont = pygame.font.SysFont("system",40)
 titlefont = pygame.font.SysFont("system",200)
@@ -192,9 +180,9 @@ while True:
     draw_rect = False
     score = 0
     bgx = 0
-    gx = 0
     pygame.event.clear()
     santa = Player()
+    ground = Tile()
    
     #시작화면
     title_text = titlefont.render("Santa Run!", 1, (255, 255, 255))
@@ -208,10 +196,7 @@ while True:
                 show_title = False
         title_sound.play()
         screen.blit(background, (bgx, 0)) 
-        for i in range(-1,17):
-                screen.blit(tile2,(-gx + i*64,64* 9))
-                screen.blit(tile5,(-gx + i*64,64* 10)) 
-                screen.blit(tile5,(-gx + i*64,64* 11)) 
+        ground.draw(screen)
         screen_width, screen_height = screen.get_size()
         screen.blit(
             title_text, title_text.get_rect(center = (screen_width /2 ,screen_height / 2 )),
@@ -244,13 +229,8 @@ while True:
                 elif event.key == K_SPACE:
                     santa.Jump()
         """업데이트"""        
-        bgx -= 0.01
-        bgx %= background.get_width()
-
-        gx +=10.0
-        gx %= tile2.get_width()
-
-
+        
+        ground.update()
         moving_sprites.update()
         bullets.update()
         obstacles.update()
@@ -274,9 +254,9 @@ while True:
             new_item = Item(1024, random.randrange(150,450))
             item.add(new_item)
                 
-        if random.random() > 0.97:  # 프레임당 2%의 확률로 장애물 생성
-            obstacles.add(Obstacle(1000, 530, vx=-6))
-            #obstacles.add(Obstacle(1000, random.randrange(100,530), vx=-6))
+        if random.random() > 0.97:  #장애물 생성
+            new_obstacle = Obstacle(1000, 530)
+            obstacles.add(new_obstacle)
                 
         #아이템 충돌
         for i in item.copy():
@@ -307,16 +287,14 @@ while True:
                     running = False
                     break  
             
-        """그리기 시작"""
+        #렌더링
         screen.fill((255,255,255))
         screen.blit(background, dest= (-bgx, 0))
         screen.blit(background, dest= (-bgx + background.get_width(), 0))
+        bgx -= 0.01
+        bgx %= background.get_width()
 
-        for i in range(-1,17):
-                screen.blit(tile2,(-gx + i*64,64* 9))
-                screen.blit(tile5,(-gx + i*64,64* 10)) 
-                screen.blit(tile5,(-gx + i*64,64* 11)) 
-
+        ground.draw(screen)
         bullets.draw(screen)
         obstacles.draw(screen)
         item.draw(screen)
