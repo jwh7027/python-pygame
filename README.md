@@ -14,10 +14,10 @@
 ## Game
 
  SantaRun<br/>
- LCTRL 선물 던기지<br/>
- SPACE바 점프<br/>
+ LCTRL-선물 던기지<br/>
+ SPACE바-점프<br/>
  2개의 키만 사용하여 게임을 즐길 수 있습니다<br/>
 
 ## UPDATE
  SantaRun<br/>
- 2022.11.28 리팩토리<br/>
+ 2022.11.28 리팩토<br/>
